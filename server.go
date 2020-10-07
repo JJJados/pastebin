@@ -19,7 +19,27 @@ type Server struct {
 	DB        *sqlx.DB
 }
 
-func GetPostsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetPostHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+}
+
+func (s *Server) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+}
+
+func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+}
+
+func (s *Server) UpdatePostHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+}
+
+func (s *Server) ReportPostHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+}
+
+func (s *Server) DeletePostHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
 
@@ -37,7 +57,15 @@ func (s *Server) Initialize() {
 }
 
 func (s *Server) InitializeRoutes() {
-	s.SubRouter.HandleFunc("/posts", GetPostsHandler).Methods(http.MethodGet)
+	// GET
+	s.SubRouter.HandleFunc("/posts", s.GetPostsHandler).Methods(http.MethodGet)
+	s.SubRouter.HandleFunc("/posts/{uuid}", s.GetPostHandler).Methods(http.MethodGet)
+	// POST
+	s.SubRouter.HandleFunc("/posts/create", s.CreatePostHandler).Methods(http.MethodPost)
+	s.SubRouter.HandleFunc("/posts/{uuid}/update", s.UpdatePostHandler).Methods(http.MethodPost)
+	s.SubRouter.HandleFunc("/posts/{uuid}/report", s.ReportPostHandler).Methods(http.MethodPost)
+	// DELETE
+	s.SubRouter.HandleFunc("/posts/{uuid}", s.DeletePostHandler).Methods(http.MethodDelete)
 }
 
 func main() {
