@@ -23,7 +23,7 @@ func GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
 
-func (s *Server) Initalize() {
+func (s *Server) Initialize() {
 	db, err := sqlx.Connect("postgres", "host=localhost port=5432 user=postgres dbname=assign1 sslmode=disable password=password")
 	if err != nil {
 		log.Fatal(err)
@@ -43,7 +43,7 @@ func (s *Server) InitializeRoutes() {
 func main() {
 	s := Server{}
 
-	s.Initalize()
+	s.Initialize()
 
 	log.Fatal(http.ListenAndServe(":3333", s.Router))
 }
