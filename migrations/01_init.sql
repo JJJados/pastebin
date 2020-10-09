@@ -12,7 +12,8 @@ CREATE TABLE post_references (
 
 -- +goose StatementBegin
 CREATE TABLE posts (
-    post_uuid uuid REFERENCES post_references (post_uuid),
+    post_uuid uuid REFERENCES post_references (post_uuid) 
+        ON DELETE CASCADE ON UPDATE CASCADE,
     title text NOT NULL,
     content text NOT NULL,
     created TIMESTAMP NOT NULL DEFAULT now(),
