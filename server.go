@@ -31,20 +31,46 @@ type Post struct {
 	PostTitle     string    `json:"postTitle,omitempty" db:"title"`
 	PostContent   string    `json:"postContent,omitempty" db:"content"`
 	PublicAccess  bool      `json:"publicAccess,omitempty" db:"public_access"`
+	Reported      bool      `json:"reported,omitempty" db:"reported"`
 	Created       time.Time `json:"created,omitempty" db:"created"`
 	Updated       time.Time `json:"updated,omitempty" db:"updated"`
 }
 
 func (s *Server) GetPostHandler(w http.ResponseWriter, r *http.Request) {
 	// Get AccessID from uri
-	//vars = mux.Vars(r)
-	//accessID = vars["uuid"]
+	vars := mux.Vars(r)
+	accessID := uuid.MustParse(vars["uuid"])
 	// Create a new Post struct
-	//p := Post{}
+	p := Post{}
 
-	//query := `SELECT * `
+	query := `	SELECT * 
+				FROM post_references
+				NATURAL JOIN posts
+				WHERE read_access_uuid = $1 OR admin_access_uuid = $1;
+			`
 
-	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+	err := s.DB.Get(&p, query, accessID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+
+	switch accessID {
+	case p.ReadAccessID:
+		w.Header().Set("Content-Type", "application/json")
+		// Send Post information back to the client
+		json.NewEncoder(w).Encode(p)
+		fmt.Println("matches read only")
+
+	case p.AdminAccessID:
+		w.Header().Set("Content-Type", "application/json")
+		// Send Post information back to the client
+		json.NewEncoder(w).Encode(p)
+		fmt.Println("matches admin only")
+
+	default:
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+	}
 }
 
 func (s *Server) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +108,9 @@ func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 	p.PostID = uuid.New()
 	p.ReadAccessID = uuid.New()
 	p.AdminAccessID = uuid.New()
+	// Assign default Reported value
+	p.Reported = false
+	// Assign Post creation and update time
 	p.Created = time.Now()
 	p.Updated = time.Now()
 
