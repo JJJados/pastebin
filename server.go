@@ -170,8 +170,43 @@ func (s *Server) UpdatePostHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) ReportPostHandler(w http.ResponseWriter, r *http.Request) {
+	// Get AccessID from uri
+	accessID, err := GetAccessID(r)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
 
-	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+	// Create a new Post struct
+	p := Post{}
+
+	err = json.NewDecoder(r.Body).Decode(&p)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	query := `UPDATE post_references SET reported = $2 WHERE reported = false AND read_access_uuid = $1;`
+
+	result, err := s.DB.Exec(query, accessID, p.Reported)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// Check the number of affected rows.
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	// If no rows were affected, post does not exist
+	if rowsAffected == 0 {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	fmt.Printf("%d record(s) reported.\n", rowsAffected)
 }
 
 func (s *Server) DeletePostHandler(w http.ResponseWriter, r *http.Request) {
@@ -182,7 +217,7 @@ func (s *Server) DeletePostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := `DELETE FROM post_references WHERE admin_access_uuid = $1`
+	query := `DELETE FROM post_references WHERE admin_access_uuid = $1;`
 
 	result, err := s.DB.Exec(query, accessID)
 	if err != nil {
