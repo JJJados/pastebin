@@ -31,12 +31,19 @@ type Post struct {
 	PostTitle     string    `json:"postTitle,omitempty" db:"title"`
 	PostContent   string    `json:"postContent,omitempty" db:"content"`
 	PublicAccess  bool      `json:"publicAccess,omitempty" db:"public_access"`
-	Reported      bool      `json:"reported,omitempty" db:"reported"`
 	Created       time.Time `json:"created,omitempty" db:"created"`
 	Updated       time.Time `json:"updated,omitempty" db:"updated"`
 }
 
 func (s *Server) GetPostHandler(w http.ResponseWriter, r *http.Request) {
+	// Get AccessID from uri
+	//vars = mux.Vars(r)
+	//accessID = vars["uuid"]
+	// Create a new Post struct
+	//p := Post{}
+
+	//query := `SELECT * `
+
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
 
@@ -75,15 +82,17 @@ func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 	p.PostID = uuid.New()
 	p.ReadAccessID = uuid.New()
 	p.AdminAccessID = uuid.New()
+	p.Created = time.Now()
+	p.Updated = time.Now()
 
 	query := `	WITH new_post as (
 					INSERT INTO post_references (
 						post_uuid, read_access_uuid, admin_access_uuid, 
-						public_access, reported
+						public_access
 					)
 						VALUES (
 							:post_uuid, :read_access_uuid, :admin_access_uuid, 
-							:public_access, :reported
+							:public_access
 						)
 					RETURNING post_uuid
 				)
@@ -106,7 +115,10 @@ func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Printf("%d record(s) created.\n", rowsAffected)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	// Send Post information back to the client
+	json.NewEncoder(w).Encode(p)
 }
 
 func (s *Server) UpdatePostHandler(w http.ResponseWriter, r *http.Request) {
