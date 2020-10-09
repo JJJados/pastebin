@@ -1,0 +1,13 @@
+# -*- restclient -*-
+
+# Get multiple posts
+GET http://localhost:3333/api/v1/posts
+
+# Create a new post
+POST http://localhost:3333/api/v1/posts/create
+Content-Type: application/json
+
+{
+	"title": "this is another test",
+	"content": "my content of the post"
+}
