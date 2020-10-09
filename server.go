@@ -5,8 +5,13 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
@@ -19,16 +24,89 @@ type Server struct {
 	DB        *sqlx.DB
 }
 
+type Post struct {
+	PostID        uuid.UUID `json:"postId" db:"post_uuid"`
+	ReadAccessID  uuid.UUID `json:"readAccessId" db:"read_access_uuid"`
+	AdminAccessID uuid.UUID `json:"adminAccessId" db:"admin_access_uuid"`
+	PostTitle     string    `json:"postTitle,omitempty" db:"title"`
+	PostContent   string    `json:"postContent,omitempty" db:"content"`
+	PublicAccess  bool      `json:"publicAccess,omitempty" db:"public_access"`
+	Reported      bool      `json:"reported,omitempty" db:"reported"`
+	Created       time.Time `json:"created,omitempty" db:"created"`
+	Updated       time.Time `json:"updated,omitempty" db:"updated"`
+}
+
 func (s *Server) GetPostHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
 
 func (s *Server) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+
+	posts := []Post{}
+
+	query := `	SELECT posts.title, post_references.read_access_uuid, posts.created,
+					posts.updated
+				FROM post_references, posts 
+				WHERE post_references.post_uuid = posts.post_uuid 
+					and public_access = true AND reported != true;
+			`
+
+	err := s.DB.Select(&posts, query)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(posts)
+	//http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
 
 func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+	// Create a new Post struct
+	p := Post{}
+
+	err := json.NewDecoder(r.Body).Decode(&p)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+	}
+
+	// Generate UUIDs for the postID and uri's
+	p.PostID = uuid.New()
+	p.ReadAccessID = uuid.New()
+	p.AdminAccessID = uuid.New()
+
+	query := `	WITH new_post as (
+					INSERT INTO post_references (
+						post_uuid, read_access_uuid, admin_access_uuid, 
+						public_access, reported
+					)
+						VALUES (
+							:post_uuid, :read_access_uuid, :admin_access_uuid, 
+							:public_access, :reported
+						)
+					RETURNING post_uuid
+				)
+				INSERT INTO posts (title, content, post_uuid)
+					VALUES (:title, :content, (select post_uuid from new_post)
+				);
+			`
+
+	result, err := s.DB.NamedExec(query, p)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+
+	// Check the number of affected rows.
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+
+	fmt.Printf("%d record(s) created.\n", rowsAffected)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (s *Server) UpdatePostHandler(w http.ResponseWriter, r *http.Request) {
