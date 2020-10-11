@@ -4,8 +4,6 @@ CREATE TABLE post_references (
     post_uuid uuid NOT NULL,
     read_access_uuid uuid NOT NULL,
     admin_access_uuid uuid NOT NULL,
-    public_access BOOLEAN NOT NULL DEFAULT TRUE,
-    reported BOOLEAN NOT NULL DEFAULT FALSE,
     PRIMARY KEY (post_uuid)
 );
 -- +goose StatementEnd
@@ -16,6 +14,8 @@ CREATE TABLE posts (
         ON DELETE CASCADE ON UPDATE CASCADE,
     title text NOT NULL,
     content text NOT NULL,
+    public_access BOOLEAN NOT NULL DEFAULT TRUE,
+    reported BOOLEAN NOT NULL DEFAULT FALSE,
     created TIMESTAMP NOT NULL DEFAULT now(),
     updated TIMESTAMP NOT NULL DEFAULT now()
 );
