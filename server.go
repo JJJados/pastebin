@@ -25,9 +25,9 @@ type Server struct {
 }
 
 type Post struct {
-	PostID        uuid.UUID `json:"postId" db:"post_uuid"`
-	ReadAccessID  uuid.UUID `json:"readAccessId" db:"read_access_uuid"`
-	AdminAccessID uuid.UUID `json:"adminAccessId" db:"admin_access_uuid"`
+	PostID        uuid.UUID `json:"postId,omitempty" db:"post_uuid"`
+	ReadAccessID  uuid.UUID `json:"readAccessId,omitempty" db:"read_access_uuid"`
+	AdminAccessID uuid.UUID `json:"adminAccessId,omitempty" db:"admin_access_uuid"`
 	PostTitle     string    `json:"postTitle,omitempty" db:"title"`
 	PostContent   string    `json:"postContent,omitempty" db:"content"`
 	PublicAccess  bool      `json:"publicAccess,omitempty" db:"public_access"`
@@ -115,6 +115,7 @@ func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&p)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -124,25 +125,19 @@ func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 	p.ReadAccessID = uuid.New()
 	p.AdminAccessID = uuid.New()
 	// Assign default Reported value
-	p.Reported = false
+	// p.Reported = false
 	// Assign Post creation and update time
 	p.Created = time.Now()
 	p.Updated = time.Now()
 
 	query := `	WITH new_post as (
 					INSERT INTO post_references (
-						post_uuid, read_access_uuid, admin_access_uuid, 
-						public_access
-					)
-						VALUES (
-							:post_uuid, :read_access_uuid, :admin_access_uuid, 
-							:public_access
-						)
+						post_uuid, read_access_uuid, admin_access_uuid)
+						VALUES (:post_uuid, :read_access_uuid, :admin_access_uuid)
 					RETURNING post_uuid
 				)
-				INSERT INTO posts (title, content, post_uuid)
-					VALUES (:title, :content, (select post_uuid from new_post)
-				);
+				INSERT INTO posts (title, content, public_access, post_uuid)
+					VALUES (:title, :content, :public_access, (select post_uuid from new_post));
 			`
 
 	result, err := s.DB.NamedExec(query, p)
@@ -166,7 +161,51 @@ func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) UpdatePostHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+	// Get AccessID from uri
+	accessID, err := GetAccessID(r)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	// Create a new Post struct
+	p := Post{}
+
+	err = json.NewDecoder(r.Body).Decode(&p)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	// Assign AccessID to the AdminAccessID to check
+	p.AdminAccessID = accessID
+	// Update the last time anything changed on the post
+	p.Updated = time.Now()
+
+	query := `	UPDATE posts SET title = :title, content = :content, 
+					public_access = :public_access, updated = :updated
+				FROM post_references
+				WHERE posts.post_uuid = post_references.post_uuid AND 
+				  	admin_access_uuid = :admin_access_uuid;`
+
+	result, err := s.DB.NamedExec(query, p)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// Check the number of affected rows.
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	// If no rows were affected, post does not exist
+	if rowsAffected == 0 {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	fmt.Printf("%d record(s) updated.\n", rowsAffected)
 }
 
 func (s *Server) ReportPostHandler(w http.ResponseWriter, r *http.Request) {
@@ -186,7 +225,9 @@ func (s *Server) ReportPostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := `UPDATE post_references SET reported = $2 WHERE reported = false AND read_access_uuid = $1;`
+	query := `UPDATE posts SET reported = $2 FROM post_references 
+				WHERE posts.post_uuid = post_references.post_uuid 
+					AND reported = false AND read_access_uuid = $1;`
 
 	result, err := s.DB.Exec(query, accessID, p.Reported)
 	if err != nil {
