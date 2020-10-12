@@ -106,6 +106,7 @@ func (s *Server) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 					posts.updated FROM post_references, posts 
 				WHERE post_references.post_uuid = posts.post_uuid 
 					and public_access = true AND reported != true
+				ORDER BY created
 				LIMIT $1 OFFSET $2;`
 
 	err := s.DB.Select(&posts, query, limit[0], offset[0])
