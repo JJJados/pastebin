@@ -57,11 +57,8 @@ func (s *Server) GetPostHandler(w http.ResponseWriter, r *http.Request) {
 	// Create a new Post struct
 	p := Post{}
 
-	query := `	SELECT * 
-				FROM post_references
-				NATURAL JOIN posts
-				WHERE read_access_uuid = $1 OR admin_access_uuid = $1;
-			`
+	query := `SELECT * FROM post_references NATURAL JOIN posts
+				WHERE read_access_uuid = $1 OR admin_access_uuid = $1;`
 
 	err = s.DB.Get(&p, query, accessID)
 	if err != nil {
@@ -88,17 +85,30 @@ func (s *Server) GetPostHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
+	// Get query params
+	q := r.URL.Query()
+	// Get the limit param
+	limit, exists := q["limit"]
+	if !exists {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	// Get the offset param
+	offset, exists := q["offset"]
+	if !exists {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
 
 	posts := []Post{}
 
-	query := `	SELECT posts.title, post_references.read_access_uuid, posts.created,
-					posts.updated
-				FROM post_references, posts 
+	query := `SELECT posts.title, post_references.read_access_uuid, posts.created,
+					posts.updated FROM post_references, posts 
 				WHERE post_references.post_uuid = posts.post_uuid 
-					and public_access = true AND reported != true;
-			`
+					and public_access = true AND reported != true
+				LIMIT $1 OFFSET $2;`
 
-	err := s.DB.Select(&posts, query)
+	err := s.DB.Select(&posts, query, limit[0], offset[0])
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -106,7 +116,6 @@ func (s *Server) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(posts)
-	//http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
 
 func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
@@ -130,15 +139,14 @@ func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 	p.Created = time.Now()
 	p.Updated = time.Now()
 
-	query := `	WITH new_post as (
+	query := `WITH new_post as (
 					INSERT INTO post_references (
 						post_uuid, read_access_uuid, admin_access_uuid)
 						VALUES (:post_uuid, :read_access_uuid, :admin_access_uuid)
 					RETURNING post_uuid
 				)
 				INSERT INTO posts (title, content, public_access, post_uuid)
-					VALUES (:title, :content, :public_access, (select post_uuid from new_post));
-			`
+					VALUES (:title, :content, :public_access, (select post_uuid from new_post));`
 
 	result, err := s.DB.NamedExec(query, p)
 	if err != nil {
@@ -181,7 +189,7 @@ func (s *Server) UpdatePostHandler(w http.ResponseWriter, r *http.Request) {
 	// Update the last time anything changed on the post
 	p.Updated = time.Now()
 
-	query := `	UPDATE posts SET title = :title, content = :content, 
+	query := `UPDATE posts SET title = :title, content = :content, 
 					public_access = :public_access, updated = :updated
 				FROM post_references
 				WHERE posts.post_uuid = post_references.post_uuid AND 
