@@ -25,15 +25,15 @@ type Server struct {
 }
 
 type Post struct {
-	PostID        uuid.UUID `json:"postId,omitempty" db:"post_uuid"`
-	ReadAccessID  uuid.UUID `json:"readAccessId,omitempty" db:"read_access_uuid"`
-	AdminAccessID uuid.UUID `json:"adminAccessId,omitempty" db:"admin_access_uuid"`
-	PostTitle     string    `json:"postTitle,omitempty" db:"title"`
-	PostContent   string    `json:"postContent,omitempty" db:"content"`
-	PublicAccess  bool      `json:"publicAccess,omitempty" db:"public_access"`
-	Reported      bool      `json:"reported,omitempty" db:"reported"`
-	Created       time.Time `json:"created,omitempty" db:"created"`
-	Updated       time.Time `json:"updated,omitempty" db:"updated"`
+	PostID        *uuid.UUID `json:"postId,omitempty" db:"post_uuid"`
+	ReadAccessID  *uuid.UUID `json:"readAccessId,omitempty" db:"read_access_uuid"`
+	AdminAccessID *uuid.UUID `json:"adminAccessId,omitempty" db:"admin_access_uuid"`
+	PostTitle     string     `json:"postTitle,omitempty" db:"title"`
+	PostContent   string     `json:"postContent,omitempty" db:"content"`
+	PublicAccess  bool       `json:"publicAccess,omitempty" db:"public_access"`
+	Reported      bool       `json:"reported,omitempty" db:"reported"`
+	Created       time.Time  `json:"created,omitempty" db:"created"`
+	Updated       time.Time  `json:"updated,omitempty" db:"updated"`
 }
 
 func GetAccessID(r *http.Request) (uuid.UUID, error) {
@@ -67,17 +67,23 @@ func (s *Server) GetPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch accessID {
-	case p.ReadAccessID:
-		w.Header().Set("Content-Type", "application/json")
-		// Send Post information back to the client
-		json.NewEncoder(w).Encode(p)
-		fmt.Println("matches read only")
+	case *p.ReadAccessID:
+		// Create a new post
+		publicP := Post{}
+		// Assign only public facing info to new post
+		publicP.ReadAccessID = p.ReadAccessID
+		publicP.PostTitle = p.PostTitle
+		publicP.PostContent = p.PostContent
+		publicP.PublicAccess = p.PublicAccess
 
-	case p.AdminAccessID:
+		w.Header().Set("Content-Type", "application/json")
+		// Send Post information back to the client
+		json.NewEncoder(w).Encode(publicP)
+
+	case *p.AdminAccessID:
 		w.Header().Set("Content-Type", "application/json")
 		// Send Post information back to the client
 		json.NewEncoder(w).Encode(p)
-		fmt.Println("matches admin only")
 
 	default:
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
@@ -106,7 +112,7 @@ func (s *Server) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 					posts.updated FROM post_references, posts 
 				WHERE post_references.post_uuid = posts.post_uuid 
 					and public_access = true AND reported != true
-				ORDER BY created
+				ORDER BY created DESC
 				LIMIT $1 OFFSET $2;`
 
 	err := s.DB.Select(&posts, query, limit[0], offset[0])
@@ -125,17 +131,23 @@ func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&p)
 	if err != nil {
-		fmt.Println(err)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	// Check if there is a post title and content
+	if len(p.PostTitle) == 0 || len(p.PostContent) == 0 {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
 	// Generate UUIDs for the postID and uri's
-	p.PostID = uuid.New()
-	p.ReadAccessID = uuid.New()
-	p.AdminAccessID = uuid.New()
-	// Assign default Reported value
-	// p.Reported = false
+	postID := uuid.New()
+	readAccessID := uuid.New()
+	adminAccessID := uuid.New()
+	// Assign values to pointers
+	p.PostID = &postID
+	p.ReadAccessID = &readAccessID
+	p.AdminAccessID = &adminAccessID
 	// Assign Post creation and update time
 	p.Created = time.Now()
 	p.Updated = time.Now()
@@ -186,7 +198,7 @@ func (s *Server) UpdatePostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Assign AccessID to the AdminAccessID to check
-	p.AdminAccessID = accessID
+	p.AdminAccessID = &accessID
 	// Update the last time anything changed on the post
 	p.Updated = time.Now()
 
@@ -209,9 +221,9 @@ func (s *Server) UpdatePostHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	// If no rows were affected, post does not exist
+	// If no rows were affected, post does not exist or read access link was used
 	if rowsAffected == 0 {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 	fmt.Printf("%d record(s) updated.\n", rowsAffected)
@@ -263,6 +275,7 @@ func (s *Server) DeletePostHandler(w http.ResponseWriter, r *http.Request) {
 	// Get AccessID from uri
 	accessID, err := GetAccessID(r)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
@@ -281,9 +294,9 @@ func (s *Server) DeletePostHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	// If no rows were affected, post does not exist
+	// If no rows were affected, post does not exist and or read access link was used
 	if rowsAffected == 0 {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 	fmt.Printf("%d record(s) deleted.\n", rowsAffected)
