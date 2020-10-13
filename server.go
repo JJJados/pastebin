@@ -30,10 +30,17 @@ type Post struct {
 	AdminAccessID *uuid.UUID `json:"adminAccessId,omitempty" db:"admin_access_uuid"`
 	PostTitle     string     `json:"postTitle,omitempty" db:"title"`
 	PostContent   string     `json:"postContent,omitempty" db:"content"`
-	PublicAccess  bool       `json:"publicAccess,omitempty" db:"public_access"`
-	Reported      bool       `json:"reported,omitempty" db:"reported"`
+	PublicAccess  *bool      `json:"publicAccess,omitempty" db:"public_access"`
+	Reported      *bool      `json:"reported,omitempty" db:"reported"`
 	Created       time.Time  `json:"created,omitempty" db:"created"`
 	Updated       time.Time  `json:"updated,omitempty" db:"updated"`
+}
+
+type ReportedPost struct {
+	ReadAccessID   *uuid.UUID `json:"readAccessId" db:"read_access_uuid"`
+	ReportedID     *uuid.UUID `json:"reportedID" db:"reported_uuid"`
+	Reported       bool       `json:"reported" db:"reported"`
+	ReportedReason string     `json:"reportedReason" db:"reported_reason"`
 }
 
 func GetAccessID(r *http.Request) (uuid.UUID, error) {
@@ -75,6 +82,7 @@ func (s *Server) GetPostHandler(w http.ResponseWriter, r *http.Request) {
 		publicP.PostTitle = p.PostTitle
 		publicP.PostContent = p.PostContent
 		publicP.PublicAccess = p.PublicAccess
+		publicP.Reported = p.Reported
 
 		w.Header().Set("Content-Type", "application/json")
 		// Send Post information back to the client
@@ -111,7 +119,7 @@ func (s *Server) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 	query := `SELECT posts.title, post_references.read_access_uuid, posts.created,
 					posts.updated FROM post_references, posts 
 				WHERE post_references.post_uuid = posts.post_uuid 
-					and public_access = true AND reported != true
+					AND public_access = true AND reported = false
 				ORDER BY created DESC
 				LIMIT $1 OFFSET $2;`
 
@@ -120,7 +128,6 @@ func (s *Server) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(posts)
 }
@@ -151,6 +158,12 @@ func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 	// Assign Post creation and update time
 	p.Created = time.Now()
 	p.Updated = time.Now()
+
+	// Checks if public access was set, if not defaults to true
+	if p.PublicAccess == nil {
+		publicAccess := true
+		p.PublicAccess = &publicAccess
+	}
 
 	query := `WITH new_post as (
 					INSERT INTO post_references (
@@ -238,21 +251,38 @@ func (s *Server) ReportPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create a new Post struct
-	p := Post{}
+	p := ReportedPost{}
+
+	reportedID := uuid.New()
+	// Set report uuid
+	p.ReportedID = &reportedID
+	p.ReadAccessID = &accessID
 
 	err = json.NewDecoder(r.Body).Decode(&p)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	query := `UPDATE posts SET reported = $2 FROM post_references 
-				WHERE posts.post_uuid = post_references.post_uuid 
-					AND reported = false AND read_access_uuid = $1;`
+	// Check if there is a reported reason
+	if len(p.ReportedReason) == 0 {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
 
-	result, err := s.DB.Exec(query, accessID, p.Reported)
+	query := `with new_report as (
+				UPDATE posts SET reported = :reported
+				FROM post_references 
+				WHERE posts.post_uuid = post_references.post_uuid 
+					AND read_access_uuid = :read_access_uuid
+				RETURNING posts.post_uuid
+			)
+			INSERT INTO reported_posts (reported_uuid, reported_reason, post_uuid)
+					VALUES (:reported_uuid, :reported_reason, (select post_uuid from new_report));`
+
+	result, err := s.DB.NamedExec(query, p)
 	if err != nil {
-		fmt.Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
