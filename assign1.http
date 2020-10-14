@@ -46,7 +46,7 @@ Content-Type: application/json
 # Note: Updating a post can only be accessed from the admin link, and the fields
 # that can be changed are: title, content, and public access.
 #
-POST http://localhost:3333/api/v1/posts/0c3c163a-4d2f-4757-81b9-73445e3a3e58/update
+POST http://localhost:3333/api/v1/posts/e5616847-58bc-4337-a027-93b908fab833/update
 Content-Type: application/json
 
 {
@@ -61,7 +61,7 @@ Content-Type: application/json
 #
 # Note: Must update from the admin link, NOT the read link
 #
-POST http://localhost:3333/api/v1/posts/e342152e-cadc-4a49-9907-e1c397b04ce4/update
+POST http://localhost:3333/api/v1/posts/60da59ad-c18f-42c1-9de8-ad7d6a4f6596/update
 Content-Type: application/json
 
 {
@@ -77,7 +77,7 @@ Content-Type: application/json
 # Note: One person should only have access to their admin link post, so they should not
 # be able to report their own post
 #
-POST http://localhost:3333/api/v1/posts/0c3c163a-4d2f-4757-81b9-73445e3a3e58/report
+POST http://localhost:3333/api/v1/posts/e5616847-58bc-4337-a027-93b908fab833/report
 Content-Type: application/json
 
 {
@@ -89,7 +89,7 @@ Content-Type: application/json
 #
 # Note: Reporting only works from a read-only link
 #
-POST http://localhost:3333/api/v1/posts/e342152e-cadc-4a49-9907-e1c397b04ce4/report
+POST http://localhost:3333/api/v1/posts/60da59ad-c18f-42c1-9de8-ad7d6a4f6596/report
 Content-Type: application/json
 
 {
@@ -101,14 +101,14 @@ Content-Type: application/json
 #
 # Note: Data returned from an admin link will return all of the post data
 #
-GET http://localhost:3333/api/v1/posts/0c3c163a-4d2f-4757-81b9-73445e3a3e58
+GET http://localhost:3333/api/v1/posts/e5616847-58bc-4337-a027-93b908fab833
 
-# Get a post through a read only Access link
+# Get a post through a read only access link
 #
 # Note: Data returned from a read only link will simply return less information
 # in comparison to the admin link
 #
-GET http://localhost:3333/api/v1/posts/e342152e-cadc-4a49-9907-e1c397b04ce4
+GET http://localhost:3333/api/v1/posts/60da59ad-c18f-42c1-9de8-ad7d6a4f6596
 
 # Attempts to get a post that doesn't exist
 #
@@ -150,13 +150,13 @@ GET http://localhost:3333/api/v1/posts?limit=5&offset=5
 #
 # Note: Deletion only works through an admin access link
 #
-DELETE http://localhost:3333/api/v1/posts/0c3c163a-4d2f-4757-81b9-73445e3a3e58
+DELETE http://localhost:3333/api/v1/posts/e5616847-58bc-4337-a027-93b908fab833
 
 # Attempts to delete a post through a read access link
 #
 # Result: 403, Forbidden
 #
-DELETE http://localhost:3333/api/v1/posts/e342152e-cadc-4a49-9907-e1c397b04ce4
+DELETE http://localhost:3333/api/v1/posts/60da59ad-c18f-42c1-9de8-ad7d6a4f6596
 
 # Attempts to delete a post that does not exist
 #
