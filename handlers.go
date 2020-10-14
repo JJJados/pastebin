@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 func (s *Server) GetPostHandler(w http.ResponseWriter, r *http.Request) {
@@ -110,9 +108,22 @@ func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate UUIDs for the postID and uri's
-	postID := uuid.New()
-	readAccessID := uuid.New()
-	adminAccessID := uuid.New()
+	postID, err := NewUUID()
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	readAccessID, err := NewUUID()
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	adminAccessID, err := NewUUID()
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	// Assign values to pointers
 	p.PostID = &postID
 	p.ReadAccessID = &readAccessID
@@ -214,7 +225,11 @@ func (s *Server) ReportPostHandler(w http.ResponseWriter, r *http.Request) {
 	// Create a new Post struct
 	p := ReportedPost{}
 
-	reportedID := uuid.New()
+	reportedID, err := NewUUID()
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 	// Set report uuid
 	p.ReportedID = &reportedID
 	p.ReadAccessID = &accessID
@@ -267,7 +282,6 @@ func (s *Server) DeletePostHandler(w http.ResponseWriter, r *http.Request) {
 	// Get AccessID from uri
 	accessID, err := GetAccessID(r)
 	if err != nil {
-		fmt.Println(err)
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
