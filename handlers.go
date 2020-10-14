@@ -43,6 +43,8 @@ func (s *Server) GetPostHandler(w http.ResponseWriter, r *http.Request) {
 		publicP.PostContent = p.PostContent
 		publicP.PublicAccess = p.PublicAccess
 		publicP.Reported = p.Reported
+		publicP.Created = p.Created
+		publicP.Updated = p.Updated
 
 		w.Header().Set("Content-Type", "application/json")
 		// Send Post information back to the client
