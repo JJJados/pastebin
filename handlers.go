@@ -86,6 +86,7 @@ func (s *Server) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 	err := s.DB.Select(&posts, query, limit[0], offset[0])
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(posts)
@@ -232,12 +233,14 @@ func (s *Server) ReportPostHandler(w http.ResponseWriter, r *http.Request) {
 				UPDATE posts SET reported = :reported
 				FROM post_references 
 				WHERE posts.post_uuid = post_references.post_uuid 
-					AND read_access_uuid = :read_access_uuid
+					AND post_references.read_access_uuid = :read_access_uuid
 				RETURNING posts.post_uuid
 			)
 			INSERT INTO reported_posts (reported_uuid, reported_reason, post_uuid)
-					VALUES (:reported_uuid, :reported_reason, (select post_uuid from new_report));`
+			SELECT :reported_uuid, :reported_reason, (SELECT post_uuid FROM new_report)
+			WHERE EXISTS(SELECT post_uuid FROM new_report);`
 
+	//VALUES (:reported_uuid, :reported_reason, (SELECT post_uuid FROM new_report));
 	result, err := s.DB.NamedExec(query, p)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -252,7 +255,7 @@ func (s *Server) ReportPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// If no rows were affected, post does not exist
 	if rowsAffected == 0 {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 	fmt.Printf("%d record(s) reported.\n", rowsAffected)
