@@ -29,7 +29,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 }
 
 func (s *Server) Initialize() {
-	db, err := sqlx.Connect("postgres", "host=localhost port=5432 user=postgres dbname=assign1 sslmode=disable password=password")
+	db, err := sqlx.Connect("postgres", "host=localhost port=5432 user=postgres dbname=pastebin sslmode=disable password=password")
 	if err != nil {
 		log.Fatal(err)
 	}
