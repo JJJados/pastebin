@@ -1,5 +1,6 @@
 {
-    "name": "assignment-2",
+    "name": "pastebin",
+    "author": "Jayden Laturnus",
     "version": "1.0.0",
     "devDependencies": {
         "@types/dot": "^1.1.4"
