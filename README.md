@@ -1,4 +1,4 @@
-# CMPT315 - Assignment 2 - Pastebin
+# Pastebin
 
 This is text sharing web application complete with a RESTful API.
 
