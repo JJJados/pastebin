@@ -1,0 +1,34 @@
+/*
+CMPT315 - Assignment 2
+Macewan University
+Jayden Laturnus
+*/
+
+h2 {
+    font-family: Verdana, Helvetica, Arial, sans-serif;
+    color: #373D3F;
+}
+
+.general-paste-info {
+    font-size: 10px;
+    color: #373D3F;
+}
+
+#paste-report-content {
+    display: block;
+}
+
+#paste-report-text {
+    width: 50%;
+}
+
+#paste-report {
+    margin-top: 10px;
+}
+
+.message {
+    opacity: 0;
+    transition: all .50s ease-in-out;
+    -moz-transition: all .50s ease-in-out;
+    -webkit-transition: all .50s  ease-in-out;
+}

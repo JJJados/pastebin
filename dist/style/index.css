@@ -1,0 +1,211 @@
+/*
+CMPT315 - Assignment 2
+Macewan University
+Jayden Laturnus
+*/
+
+body {
+    width: 100%;
+    background-color: #F5F5F5;
+    margin: 0%;
+    margin-top: 5px;
+}
+
+header {
+    border-bottom: 1px solid rgba(55, 61, 63, 0.2);
+}
+
+nav {
+    text-align: left;
+}
+
+img {
+    vertical-align: middle;
+}
+
+ul {
+    display: inline-block;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+
+}
+  
+li {
+    float: left;
+}
+  
+li a {
+    font-family: Verdana, Helvetica, Arial, sans-serif;
+    display: block;
+    color: #373D3F;
+    text-align: left;
+    padding: 8px 0px;
+    padding-right: 4px;
+    margin-right: 14px;
+    text-decoration: none;
+}
+  
+/* Change the link color to #111 (black) on hover */
+li a:hover {
+    border-radius: 6px;
+    border-bottom: 1px solid #FF7F50;
+}
+
+textarea {
+    resize: none;
+    width: 100%;
+    height: 320px;
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out; 
+    outline: 0; 
+    box-shadow: none; 
+    border: 1px solid #ccc; 
+    border-radius: 0; 
+    padding: 4px;
+    box-sizing: content-box; 
+    overflow-y: hidden; 
+    color: #373D3F;
+    background-color: #FFF;
+}
+
+textarea:focus:not([readonly]) {
+    border: 2px solid #1c84fc; 
+    border-radius: 6px;
+}
+
+label {
+    font-family: Verdana, Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    color: #373D3F;
+}
+
+input {
+    font-family: Verdana, Helvetica, Arial, sans-serif;
+    text-align: left;
+    margin-bottom: 10px;
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out; 
+    outline: 0; 
+    box-shadow: none; 
+    border: 1px solid #ccc; 
+    border-radius: 6px; 
+    box-sizing: content-box; 
+    overflow-y: hidden; 
+    color: #373D3F;
+    background-color: #FFF;
+}
+
+input:focus {
+    border: 2px solid #1c84fc; 
+    border-radius: 6px;
+}
+
+input:not([disabled]) {
+    cursor: pointer;
+}
+
+input[type=text] {
+    cursor: text;
+    padding: 4px;
+    box-sizing: content-box; 
+}
+
+input[type=submit] {
+    height: 20px;
+}
+
+input[type=submit]:hover {
+    background-color: #373D3F;
+    color: #FFF;
+}
+
+input[type=button] {
+    height: 20px;
+}
+
+input[type=button]:hover {
+    background-color: #373D3F;
+    color: #FFF;
+}
+
+p {
+    font-family: Verdana, Helvetica, Arial, sans-serif;
+}
+
+h1, h2, h3, h4 {
+    font-family: Verdana, Helvetica, Arial, sans-serif;
+    color: #373D3F;
+}
+
+.link {
+    font-family: Verdana, Helvetica, Arial, sans-serif;
+    color: #FF7F50;
+}
+
+.link:visited {
+    color: #373D3F;
+}
+
+.link:hover {
+    color: #ff4400;
+}
+
+.footer {
+    position: relative;
+    left: 0;
+    bottom: 0;
+    color: #373D3F;
+    text-align: left;
+    font-size: 10px;
+}
+
+.container {
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    width: 720px;
+}
+
+.paste-form {
+    display: inline-block;
+    background-color: #F6F6F6;
+    padding: 12px;
+    padding-right: 20px;
+    border: 1px solid #ccc;
+    width: 100%;
+}
+
+.nav-label {
+    display: inline-block;
+    vertical-align: bottom;
+}
+
+.message {
+    opacity: 0;
+    transition: all .50s ease-in-out;
+    -moz-transition: all .50s ease-in-out;
+    -webkit-transition: all .50s  ease-in-out;
+}
+
+#paste-header {
+    text-align: left;
+    margin-bottom: 10px;
+}
+
+#paste-content {
+    text-align: left;
+    margin-bottom: 10px;
+}
+
+#paste-footer {
+    text-align: left;
+}
+
+#paste-title {
+    display: block;
+}
+
+#paste-report-text {
+    height: 60px;
+}

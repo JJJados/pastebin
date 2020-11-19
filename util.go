@@ -1,6 +1,6 @@
-// CMPT315 Macewan University
-// Assignment 1: RESTful API for Text Sharing
-// Author: Jayden Laturnus
+// CMPT315 - Assignment 2
+// Macewan University
+// Jayden Laturnus
 
 package main
 
@@ -39,4 +39,17 @@ func GetAccessID(r *http.Request) (string, error) {
 		return accessID, errors.New("Cannot find ID")
 	}
 	return accessID, nil
+}
+
+/*
+Checks if publicAccess is private for templating
+This may seem counter intutive but for some reason within templating
+it would not compare true/false correctly without the help of this
+function.
+*/
+func (p Post) IsPrivate(publicAccess bool) bool {
+	if publicAccess {
+		return true
+	}
+	return false
 }

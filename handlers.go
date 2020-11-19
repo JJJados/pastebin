@@ -1,15 +1,45 @@
-// CMPT315 Macewan University
-// Assignment 1: RESTful API for Text Sharing
-// Author: Jayden Laturnus
+// CMPT315 - Assignment 2
+// Macewan University
+// Jayden Laturnus
 
 package main
 
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
+	"strconv"
 	"time"
 )
+
+func (s *Server) IndexPageHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "./dist/html/index.html")
+}
+
+func (s *Server) PostsPageHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "./dist/html/pastes.html")
+}
+
+func (s *Server) PostPageHandler(w http.ResponseWriter, r *http.Request) {
+	// Get AccessID from uri
+	accessID, err := GetAccessID(r)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	tmpl := template.Must(template.ParseFiles("./dist/html/paste.html"))
+
+	p, err := s.GetPost(accessID)
+
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	tmpl.Execute(w, p)
+}
 
 func (s *Server) GetPostHandler(w http.ResponseWriter, r *http.Request) {
 	// Get AccessID from uri
@@ -19,43 +49,16 @@ func (s *Server) GetPostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create a new Post struct
-	p := Post{}
+	p, err := s.GetPost(accessID)
 
-	query := `SELECT * FROM post_references NATURAL JOIN posts
-				WHERE read_access_uuid = $1 OR admin_access_uuid = $1;`
-
-	err = s.DB.Get(&p, query, accessID)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
-	switch accessID {
-	case *p.ReadAccessID:
-		// Create a new post
-		publicP := Post{}
-		// Assign only public facing info to new post
-		publicP.ReadAccessID = p.ReadAccessID
-		publicP.PostTitle = p.PostTitle
-		publicP.PostContent = p.PostContent
-		publicP.PublicAccess = p.PublicAccess
-		publicP.Reported = p.Reported
-		publicP.Created = p.Created
-		publicP.Updated = p.Updated
-
-		w.Header().Set("Content-Type", "application/json")
-		// Send Post information back to the client
-		json.NewEncoder(w).Encode(publicP)
-
-	case *p.AdminAccessID:
-		w.Header().Set("Content-Type", "application/json")
-		// Send Post information back to the client
-		json.NewEncoder(w).Encode(p)
-
-	default:
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-	}
+	w.Header().Set("Content-Type", "application/json")
+	// Send Post information back to the client
+	json.NewEncoder(w).Encode(p)
 }
 
 func (s *Server) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +70,14 @@ func (s *Server) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
+
+	// Checks to ensure limit is int
+	_, err := strconv.Atoi(limit[0])
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
 	// Get the offset param
 	offset, exists := q["offset"]
 	if !exists {
@@ -74,20 +85,20 @@ func (s *Server) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	posts := Posts{}
+	// Checks to ensure offset is int
+	_, err = strconv.Atoi(offset[0])
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
 
-	query := `SELECT posts.title, post_references.read_access_uuid, posts.created,
-					posts.updated FROM post_references, posts 
-				WHERE post_references.post_uuid = posts.post_uuid 
-					AND public_access = true AND reported = false
-				ORDER BY created DESC
-				LIMIT $1 OFFSET $2;`
+	posts, err := s.GetPosts(limit, offset)
 
-	err := s.DB.Select(&posts, query, limit[0], offset[0])
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(posts)
 }
@@ -101,6 +112,7 @@ func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
+
 	// Check if there is a post title and content
 	if len(p.PostTitle) == 0 || len(p.PostContent) == 0 {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -138,16 +150,8 @@ func (s *Server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 		p.PublicAccess = &publicAccess
 	}
 
-	query := `WITH new_post as (
-					INSERT INTO post_references (
-						post_uuid, read_access_uuid, admin_access_uuid)
-						VALUES (:post_uuid, :read_access_uuid, :admin_access_uuid)
-					RETURNING post_uuid
-				)
-				INSERT INTO posts (title, content, public_access, post_uuid)
-					VALUES (:title, :content, :public_access, (select post_uuid from new_post));`
+	result, err := s.CreatePost(p)
 
-	result, err := s.DB.NamedExec(query, p)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -188,13 +192,7 @@ func (s *Server) UpdatePostHandler(w http.ResponseWriter, r *http.Request) {
 	// Update the last time anything changed on the post
 	p.Updated = time.Now()
 
-	query := `UPDATE posts SET title = :title, content = :content, 
-					public_access = :public_access, updated = :updated
-				FROM post_references
-				WHERE posts.post_uuid = post_references.post_uuid AND 
-				  	admin_access_uuid = :admin_access_uuid;`
-
-	result, err := s.DB.NamedExec(query, p)
+	result, err := s.UpdatePost(p)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -246,19 +244,7 @@ func (s *Server) ReportPostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := `with new_report as (
-				UPDATE posts SET reported = :reported
-				FROM post_references 
-				WHERE posts.post_uuid = post_references.post_uuid 
-					AND post_references.read_access_uuid = :read_access_uuid
-				RETURNING posts.post_uuid
-			)
-			INSERT INTO reported_posts (reported_uuid, reported_reason, post_uuid)
-			SELECT :reported_uuid, :reported_reason, (SELECT post_uuid FROM new_report)
-			WHERE EXISTS(SELECT post_uuid FROM new_report);`
-
-	//VALUES (:reported_uuid, :reported_reason, (SELECT post_uuid FROM new_report));
-	result, err := s.DB.NamedExec(query, p)
+	result, err := s.ReportPost(p)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -286,11 +272,9 @@ func (s *Server) DeletePostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := `DELETE FROM post_references WHERE admin_access_uuid = $1;`
-
-	result, err := s.DB.Exec(query, accessID)
+	result, err := s.DeletePost(accessID)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 

@@ -1,0 +1,165 @@
+# -*- restclient -*-
+
+# Create a new post
+#
+# Note: Exluding publicAccess in the request will
+# then default to true
+#
+POST http://localhost:3333/api/v1/posts
+Content-Type: application/json
+
+{
+	"postTitle": "My FIRST paste",
+	"postContent": "This will be my first paste!"
+}
+
+# Creates a private post
+#
+# Note: As per the above note, specifying publicAccess
+# will determine if a public or private post
+#
+POST http://localhost:3333/api/v1/posts
+Content-Type: application/json
+
+{
+	"postTitle": "My private post",
+	"postContent": "this is my private post",
+	"publicAccess": false
+}
+
+# Attempts to create a post with a missing parameter
+#
+# Result: 400, Bad Request
+#
+# Note: Must have a non-empty title and content included to avoid
+# this error
+#
+POST http://localhost:3333/api/v1/posts
+Content-Type: application/json
+
+{
+	"postTitle": "",
+}
+
+# Update a post from the admin access link
+#
+# Note: Updating a post can only be accessed from the admin link, and the fields
+# that can be changed are: title, content, and public access.
+#
+PUT http://localhost:3333/api/v1/posts/e5616847-58bc-4337-a027-93b908fab833
+Content-Type: application/json
+
+{
+	"postTitle": "Update post from admin",
+	"postContent": "newly updated content",
+	"publicAccess": false
+}
+
+# Attempts to update a post from the read access link
+#
+# Result: 403, Forbidden
+#
+# Note: Must update from the admin link, NOT the read link
+#
+PUT http://localhost:3333/api/v1/posts/60da59ad-c18f-42c1-9de8-ad7d6a4f6596
+Content-Type: application/json
+
+{
+	"postTitle": "Updated this post",
+	"postContent": "newly updated content",
+	"publicAccess": true
+}
+
+# Attempts to report a post through a admin access link
+#
+# Result: 403, Forbidden
+#
+# Note: One person should only have access to their admin link post, so they should not
+# be able to report their own post
+#
+POST http://localhost:3333/api/v1/posts/e5616847-58bc-4337-a027-93b908fab833/reports
+Content-Type: application/json
+
+{
+	"reported": true,
+	"reportedReason": "trying to report my own post"
+}
+
+# Report a post through a read access link
+#
+# Note: Reporting only works from a read-only link
+#
+POST http://localhost:3333/api/v1/posts/60da59ad-c18f-42c1-9de8-ad7d6a4f6596/reports
+Content-Type: application/json
+
+{
+	"reported": true,
+	"reportedReason": "don't like the post"
+}
+
+# Get a post through a admin access link
+#
+# Note: Data returned from an admin link will return all of the post data
+#
+GET http://localhost:3333/api/v1/posts/e5616847-58bc-4337-a027-93b908fab833
+
+# Get a post through a read only access link
+#
+# Note: Data returned from a read only link will simply return less information
+# in comparison to the admin link
+#
+GET http://localhost:3333/api/v1/posts/d3bacc81-cf0e-4f11-aef6-257fa5b83222
+
+# Attempts to get a post that doesn't exist
+#
+# Result: 404, Not Found
+#
+GET http://localhost:3333/api/v1/posts/does-not-exist
+
+# Attempts to get multiple posts without arguments
+#
+# Result: 400, Bad Request 
+#
+# Note: Getting posts only workings when limit and offset are specified
+#
+GET http://localhost:3333/api/v1/posts
+
+# Attempts to get multiple posts with limit set at a non-int value
+#
+# Result: 500, Internal Server Error
+#
+# Post data returned: Read only link, title, created timestamp, updated timestamp
+GET http://localhost:3333/api/v1/posts?limit=nonint&offset=0
+
+# Get multiple posts with limit and offset at 0
+#
+# Note: When offset is set at 0 it simply gets n posts sorted
+# by creation date. (n=limit)
+#
+# Post data returned: Read only link, title, created timestamp, updated timestamp
+GET http://localhost:3333/api/v1/posts?limit=10&offset=0
+
+# Get multiple posts with limit and offset both set
+#
+# Note: If offset is greather than number of posts in DB it
+# will return rempty
+#
+GET http://localhost:3333/api/v1/posts?limit=5&offset=5
+
+# Deletes a post through with a admin access link
+#
+# Note: Deletion only works through an admin access link
+#
+DELETE http://localhost:3333/api/v1/posts/e5616847-58bc-4337-a027-93b908fab833
+
+# Attempts to delete a post through a read access link
+#
+# Result: 403, Forbidden
+#
+DELETE http://localhost:3333/api/v1/posts/60da59ad-c18f-42c1-9de8-ad7d6a4f6596
+
+# Attempts to delete a post that does not exist
+#
+# Result: 404, Not Found
+#
+DELETE http://localhost:3333/api/v1/posts/does-not-exist  

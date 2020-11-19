@@ -1,6 +1,6 @@
-// CMPT315 Macewan University
-// Assignment 1: RESTful API for Text Sharing
-// Author: Jayden Laturnus
+// CMPT315 - Assignment 2
+// Macewan University
+// Jayden Laturnus
 
 package main
 

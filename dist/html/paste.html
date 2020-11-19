@@ -1,0 +1,151 @@
+<!--
+CMPT315 - Assignment 2
+Macewan University
+Jayden Laturnus
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" type="text/css" href="../style/index.css">
+    <link rel="stylesheet" type="text/css" href="../style/paste.css">
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <ul>
+                    <li><a href="/">
+                        <img src="../icons/home-24px.svg" alt="home icon">
+                        <span class="nav-label">Pastebin</span>
+                    </a></li>
+                    <li><a href="/pastes">
+                        <img src="../icons/article-24px.svg" alt="article icon">
+                        <span class="nav-label">Pastes</span>
+                    </a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <div class="container">
+        {{if .AdminAccessID}}
+            <h2>Update paste</h2>
+            <p class="general-paste-info">
+                <b>Admin access:</b> 
+                <em>
+                    <a class="link" href="http://localhost:3333/pastes/{{.AdminAccessID}}">
+                        http://localhost:3333/pastes/{{.AdminAccessID}}
+                    </a>
+                </em>
+            </p>
+            <p class="general-paste-info">
+                <b>
+                    Read only access:
+                </b> 
+                <em>
+                    <a class="link" href="http://localhost:3333/pastes/{{.ReadAccessID}}">
+                        http://localhost:3333/pastes/{{.ReadAccessID}}
+                    </a>
+                </em>
+            </p>
+        {{else}}
+            <h2>View paste</h2>
+        {{end}}
+        <form class="paste-form" id="update-paste-form">
+            <div id="paste-header"> 
+                {{if .AdminAccessID}}
+                    <label for="paste-title" id="paste-title-label">Title:</label>
+                    <input type="text" id="paste-title" name="paste-title" maxlength="16" required value={{.PostTitle}}> 
+                {{else}}
+                    <h2>{{.PostTitle}}</h2>
+                {{end}}
+            </div>
+            <div id="paste-content">
+                {{if .AdminAccessID}}
+                    <textarea 
+                        type="text" 
+                        id="paste-content-text" 
+                        name="paste-content-text"
+                        rows="10"
+                        cols="40"
+                        required
+                    >{{.PostContent}}</textarea>
+                {{else}}
+                    <textarea 
+                        type="text" 
+                        id="paste-content-text" 
+                        name="paste-content-text"
+                        rows="10"
+                        cols="40"
+                        readonly
+                    >{{.PostContent}}</textarea>
+                {{end}}
+            </div>
+            <div id="paste-footer">
+                <div>
+                    {{if .AdminAccessID}}
+                        {{if .IsPrivate .PublicAccess }}
+                            <input type="checkbox" id="private-check" name="private-check">
+                        {{else}}
+                            <input type="checkbox" id="private-check" name="private-check" checked>
+                        {{end}}
+                        <label for="private-check" id="private-check-label">Private</label>
+                    {{else}}
+                        {{if .IsPrivate .PublicAccess }}
+                            <input type="checkbox" id="private-check" name="private-check" checked disabled>
+                            <label for="private-check" id="private-check-label">Public</label>
+                        {{else}}
+                            <input type="checkbox" id="private-check" name="private-check" checked disabled>
+                            <label for="private-check" id="private-check-label">Private</label>
+                        {{end}}
+                    {{end}}
+                </div>
+                {{if .AdminAccessID}}
+                    <div id="admin-buttons" data-admin-id={{.AdminAccessID}}>
+                        <input type="submit" value="Update Paste" id="paste-update">
+                        <input type="button" value="Delete Paste" id="paste-delete">
+                    </div>
+                {{end}}
+            </div>
+        </form>
+        {{if .AdminAccessID}}
+            <p class="message" id="update-paste-message"></p>
+        {{end}}
+        <form id="report-paste-form" data-read-id={{.ReadAccessID}}>
+            <div id="report-paste-content">
+                {{if not .AdminAccessID}}
+                    <h4>Something wrong?</h4>
+                    <textarea 
+                        type="text" 
+                        id="paste-report-text" 
+                        name="paste-report-text"
+                        placeholder="Let us know..."
+                        rows="10"
+                        cols="40"
+                        required
+                    ></textarea>
+                    <div>
+                        <input type="submit" value="Report Paste" id="paste-report">
+                    </div>
+                {{end}}
+            </div>
+        </form>
+        <p class="message" id="report-paste-message"></p>
+        <div class="footer">
+            <p>© Jayden Laturnus - MacEwan University</p>
+        </div>
+    </div>
+    {{if .AdminAccessID}}
+        <script src="../js/util.js"></script>
+        <script src="../js/updatePaste.js"></script>
+        <script src="../js/deletePaste.js"></script>
+    {{else}}
+        <script src="../js/util.js"></script>
+        <script src="../js/reportPaste.js"></script>
+    {{end}}
+</body>
+
+</html>

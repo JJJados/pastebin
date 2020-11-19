@@ -1,0 +1,58 @@
+/*
+CMPT315 - Assignment 2
+Macewan University
+Jayden Laturnus
+*/
+
+table {  
+    font-family: Verdana, Helvetica, Arial, sans-serif;
+    width: 100%; 
+    border-collapse: collapse; 
+    border-spacing: 0; 
+    margin-bottom: 20px;
+}
+
+th, td {
+    height: 32px;
+    text-align: left;
+    padding-bottom: 4px;
+    padding-top: 12px;
+    padding-right: 36px;
+    color: #373D3F;
+}
+
+td {
+    border-top: 1px solid rgba(55, 61, 63, 0.2);
+    border-bottom: 1px solid rgba(55, 61, 63, 0.2);
+}
+
+button {
+    font-family: Verdana, Helvetica, Arial, sans-serif;
+    text-align: left;
+    margin-bottom: 10px;
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out; 
+    outline: 0; 
+    box-shadow: none; 
+    border: 1px solid #ccc; 
+    border-radius: 6px; 
+    box-sizing: content-box; 
+    overflow-y: hidden; 
+    color: #373D3F;
+    background-color: #FFF;
+    height: 20px;
+}
+
+button:disabled {
+    background-color: #F2F3F4;
+    cursor: not-allowed;
+}
+
+button:hover:not([disabled]) {
+    background-color: #373D3F;
+    color: #FFF;
+    cursor: pointer;
+}
+
+#last-page {
+    height: 50px;
+}

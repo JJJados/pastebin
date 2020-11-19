@@ -1,0 +1,80 @@
+<!--
+CMPT315 - Assignment 2
+Macewan University
+Jayden Laturnus
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" type="text/css" href="../style/index.css">
+    <link rel="stylesheet" type="text/css" href="../style/pastes.css">
+
+    <script type="text/x-dot-template" id="pastes-template">
+        {{? !it instanceof Array || it.length == 0}}
+        <div id="last-page">
+          <p id="last-page-message">You've reached the end!</p>
+        </div>
+        {{??}}
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Created</th>
+                <th>Last Updated</th>
+              </tr>
+            </thead>
+            {{~it :value}}
+            <tbody>
+              <tr>
+                <td>
+                    <a class="link" href="http://localhost:3333/pastes/{{=value.readAccessId}}">
+                    <div>
+                        {{=value.postTitle}}
+                    </div>
+                </td>
+                <td>{{=value.created}}</td>
+                <td>{{=value.updated}}</td>
+              </tr>
+            </tbody>
+            {{~}}
+          </table>
+        {{?}}
+      </script>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <ul>
+                    <li><a href="/">
+                        <img src="../icons/home-24px.svg" alt="home icon">
+                        <span class="nav-label">Pastebin</span>
+                    </a></li>
+                    <li><a href="/pastes">
+                        <img src="../icons/article-24px.svg" alt="article icon">
+                        <span class="nav-label">Pastes</span>
+                    </a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <div class="container">
+        <h2>Pastes</h2>
+        <div id="pastes"></div>
+        <div id="page-buttons" data-cur-page="1" data-limit="10" data-offset="0">
+            <button id="prev-page-button">Previous Page</button>
+            <button id="next-page-button">Next Page</button>
+        </div>
+        <div class="footer">
+            <p>© Jayden Laturnus - MacEwan University</p>
+        </div>
+    </div>
+    <script src="../js/doT.js"></script>
+    <script src="../js/getPastes.js"></script>
+</body>
+
+</html>
