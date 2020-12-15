@@ -1,4 +1,4 @@
-// CMPT315 - Assignment 2
+// CMPT315 - Pastebin
 // Macewan University
 // Jayden Laturnus
 
